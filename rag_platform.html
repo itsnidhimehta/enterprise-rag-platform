@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise RAG Intelligence Platform</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; font-size: 14px; height: 100vh; display: flex; flex-direction: column; }
+
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: 230px; min-width: 230px; background: #fff; border-right: 1px solid #e8e8e0; display: flex; flex-direction: column; }
+  .sidebar-header { padding: 16px 18px 12px; border-bottom: 1px solid #e8e8e0; }
+  .logo { font-size: 14px; font-weight: 600; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
+  .logo-icon { width: 24px; height: 24px; background: #185FA5; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; }
+  .tagline { font-size: 11px; color: #888; margin-top: 3px; }
+
+  .role-section { padding: 14px 16px; border-bottom: 1px solid #e8e8e0; }
+  .section-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+  .role-btn { width: 100%; text-align: left; padding: 8px 10px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; background: transparent; font-size: 12px; color: #555; display: flex; align-items: center; gap: 8px; transition: all 0.15s; margin-bottom: 3px; font-family: inherit; }
+  .role-btn:hover { background: #f5f5f0; border-color: #e8e8e0; }
+  .role-btn.active { background: #EBF4FF; border-color: #b3d4f7; color: #185FA5; font-weight: 600; }
+  .role-badge { font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 600; margin-left: auto; }
+
+  .sources-section { padding: 14px 16px; flex: 1; overflow-y: auto; }
+  .source-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12px; color: #555; }
+  .source-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .source-count { margin-left: auto; font-size: 10px; color: #aaa; }
+
+  .stats-section { padding: 12px 16px; border-top: 1px solid #e8e8e0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-card { background: #f5f5f0; border-radius: 8px; padding: 8px 10px; }
+  .stat-val { font-size: 16px; font-weight: 600; color: #1a1a1a; }
+  .stat-lbl { font-size: 10px; color: #888; margin-top: 1px; }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #fafaf8; }
+  .main-header { padding: 14px 20px; border-bottom: 1px solid #e8e8e0; display: flex; align-items: center; gap: 10px; background: #fff; }
+  .main-header h2 { font-size: 15px; font-weight: 600; }
+  .user-chip { margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 5px 12px; border: 1px solid #e8e8e0; border-radius: 20px; font-size: 12px; color: #555; background: #fff; }
+  .avatar { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; }
+
+  .chat-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: #aaa; text-align: center; }
+  .empty-icon { width: 56px; height: 56px; background: #EBF4FF; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 26px; }
+  .empty-state p { font-size: 13px; color: #888; max-width: 280px; line-height: 1.6; }
+
+  /* Messages */
+  .msg { display: flex; flex-direction: column; gap: 5px; }
+  .msg.user { align-items: flex-end; }
+  .msg.assistant { align-items: flex-start; }
+  .msg-bubble { max-width: 82%; padding: 11px 15px; border-radius: 14px; font-size: 13px; line-height: 1.65; }
+  .msg.user .msg-bubble { background: #185FA5; color: #fff; border-bottom-right-radius: 4px; }
+  .msg.assistant .msg-bubble { background: #fff; border: 1px solid #e8e8e0; border-bottom-left-radius: 4px; color: #1a1a1a; }
+
+  .citations { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .cite-tag { font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: 500; display: flex; align-items: center; gap: 4px; border: 1px solid; }
+
+  .trace-panel { border: 1px solid #e8e8e0; border-radius: 10px; margin-top: 6px; overflow: hidden; max-width: 82%; background: #fff; }
+  .trace-header { padding: 7px 12px; background: #f5f5f0; font-size: 11px; color: #666; display: flex; align-items: center; gap: 6px; cursor: pointer; border-bottom: 1px solid #e8e8e0; user-select: none; }
+  .trace-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; }
+  .trace-row { display: flex; align-items: center; gap: 10px; font-size: 11px; }
+  .trace-src { font-weight: 500; color: #555; width: 90px; flex-shrink: 0; font-size: 11px; }
+  .trace-bar-wrap { flex: 1; height: 5px; background: #f0f0ea; border-radius: 3px; overflow: hidden; }
+  .trace-bar { height: 100%; border-radius: 3px; }
+  .trace-score { font-size: 10px; color: #999; width: 32px; text-align: right; }
+  .trace-locked { font-size: 10px; color: #c0392b; display: flex; align-items: center; gap: 4px; }
+
+  .denied-banner { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 10px; padding: 10px 14px; font-size: 12px; color: #991b1b; display: flex; align-items: flex-start; gap: 10px; margin-top: 6px; max-width: 82%; line-height: 1.5; }
+
+  .confidence { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 11px; color: #999; }
+  .conf-bar-wrap { width: 70px; height: 4px; background: #f0f0ea; border-radius: 3px; }
+  .conf-bar { height: 100%; border-radius: 3px; }
+
+  .loading-msg { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #888; padding: 8px 0; }
+  .dots { display: flex; gap: 4px; }
+  .dots span { width: 6px; height: 6px; border-radius: 50%; background: #185FA5; animation: bounce 1.2s infinite; }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+  /* Input */
+  .suggestions { padding: 0 20px 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .sug-btn { font-size: 11px; padding: 5px 12px; border: 1px solid #ddd; border-radius: 20px; background: #fff; color: #555; cursor: pointer; transition: all 0.12s; font-family: inherit; }
+  .sug-btn:hover { background: #EBF4FF; color: #185FA5; border-color: #b3d4f7; }
+
+  .input-bar { padding: 14px 20px; border-top: 1px solid #e8e8e0; display: flex; gap: 10px; align-items: flex-end; background: #fff; }
+  .input-wrap { flex: 1; }
+  .query-input { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 12px; font-size: 13px; background: #fafaf8; color: #1a1a1a; font-family: inherit; resize: none; outline: none; line-height: 1.5; min-height: 42px; max-height: 100px; transition: border-color 0.15s; }
+  .query-input:focus { border-color: #185FA5; background: #fff; }
+  .send-btn { padding: 10px 18px; background: #185FA5; color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.15s; font-family: inherit; white-space: nowrap; }
+  .send-btn:hover { background: #0C447C; }
+  .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .role-switch-notice { text-align: center; font-size: 11px; color: #aaa; padding: 4px 0; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">&#9881;</div>
+        RAG Intelligence
+      </div>
+      <div class="tagline">Enterprise Knowledge Platform</div>
+    </div>
+
+    <div class="role-section">
+      <div class="section-label">Switch Role</div>
+      <button class="role-btn active" onclick="setRole('analyst')" id="role-analyst">
+        &#128202; Analyst
+        <span class="role-badge" style="background:#EBF4FF;color:#185FA5">L2</span>
+      </button>
+      <button class="role-btn" onclick="setRole('hr')" id="role-hr">
+        &#128101; HR Manager
+        <span class="role-badge" style="background:#f0fdf4;color:#166534">L3</span>
+      </button>
+      <button class="role-btn" onclick="setRole('exec')" id="role-exec">
+        &#128081; Executive
+        <span class="role-badge" style="background:#fffbeb;color:#92400e">L5</span>
+      </button>
+      <button class="role-btn" onclick="setRole('it')" id="role-it">
+        &#128272; IT Security
+        <span class="role-badge" style="background:#fdf4ff;color:#7e22ce">L4</span>
+      </button>
+    </div>
+
+    <div class="sources-section">
+      <div class="section-label">Data Sources</div>
+      <div class="source-item"><div class="source-dot" style="background:#e74c3c"></div>PDFs &amp; Docs<span class="source-count">247</span></div>
+      <div class="source-item"><div class="source-dot" style="background:#185FA5"></div>SQL / CSV<span class="source-count">58 tables</span></div>
+      <div class="source-item"><div class="source-dot" style="background:#27ae60"></div>JSON Logs<span class="source-count">12.4M</span></div>
+      <div class="source-item"><div class="source-dot" style="background:#f39c12"></div>Compliance<span class="source-count">89</span></div>
+      <div class="source-item"><div class="source-dot" style="background:#8e44ad"></div>Audit Trails<span class="source-count">Restricted</span></div>
+      <div class="source-item"><div class="source-dot" style="background:#16a085"></div>Tech Reports<span class="source-count">134</span></div>
+    </div>
+
+    <div class="stats-section">
+      <div class="stat-card"><div class="stat-val">98.2%</div><div class="stat-lbl">Accuracy</div></div>
+      <div class="stat-card"><div class="stat-val">1.4s</div><div class="stat-lbl">Avg latency</div></div>
+      <div class="stat-card"><div class="stat-val">0</div><div class="stat-lbl">Violations</div></div>
+      <div class="stat-card"><div class="stat-val" id="query-count">0</div><div class="stat-lbl">Queries</div></div>
+    </div>
+  </div>
+
+  <!-- Main chat area -->
+  <div class="main">
+    <div class="main-header">
+      <div style="width:10px;height:10px;border-radius:50%;background:#27ae60"></div>
+      <h2>Enterprise RAG Assistant</h2>
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar" style="background:#EBF4FF;color:#185FA5">AN</div>
+        <span id="user-name">Alex N. &middot; Analyst</span>
+        &#128274;
+      </div>
+    </div>
+
+    <div class="chat-area" id="chat-area">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">&#129504;</div>
+        <p>Ask anything across your enterprise data. Your role determines what you can access.</p>
+      </div>
+    </div>
+
+    <div class="suggestions" id="suggestions">
+      <button class="sug-btn" onclick="useSuggestion(this)">Q3 revenue by region</button>
+      <button class="sug-btn" onclick="useSuggestion(this)">Show me salary data for all employees</button>
+      <button class="sug-btn" onclick="useSuggestion(this)">Recent security alerts in logs</button>
+      <button class="sug-btn" onclick="useSuggestion(this)">Compliance audit status</button>
+      <button class="sug-btn" onclick="useSuggestion(this)">Top 5 open IT incidents</button>
+    </div>
+
+    <div class="input-bar">
+      <div class="input-wrap">
+        <textarea class="query-input" id="query-input"
+          placeholder="Ask a question across your enterprise data..."
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"></textarea>
+      </div>
+      <button class="send-btn" id="send-btn" onclick="sendQuery()">&#9654; Ask</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── ROLE DEFINITIONS ──────────────────────────────────────────────
+const ROLES = {
+  analyst: {
+    name: 'Alex N.', title: 'Analyst', level: 2, initials: 'AN',
+    avatarBg: '#EBF4FF', avatarColor: '#185FA5',
+    sources: ['PDFs & Docs', 'SQL / CSV', 'Tech Reports'],
+    denied: ['Compliance', 'Audit Trails', 'HR Records', 'Salary Data']
+  },
+  hr: {
+    name: 'Sarah K.', title: 'HR Manager', level: 3, initials: 'SK',
+    avatarBg: '#f0fdf4', avatarColor: '#166534',
+    sources: ['PDFs & Docs', 'SQL / CSV', 'HR Records', 'Compliance'],
+    denied: ['Audit Trails', 'Security Logs']
+  },
+  exec: {
+    name: 'James W.', title: 'Executive', level: 5, initials: 'JW',
+    avatarBg: '#fffbeb', avatarColor: '#92400e',
+    sources: ['PDFs & Docs', 'SQL / CSV', 'JSON Logs', 'Compliance', 'Audit Trails', 'Tech Reports'],
+    denied: []
+  },
+  it: {
+    name: 'Priya M.', title: 'IT Security', level: 4, initials: 'PM',
+    avatarBg: '#fdf4ff', avatarColor: '#7e22ce',
+    sources: ['JSON Logs', 'Audit Trails', 'Security Logs', 'Tech Reports'],
+    denied: ['HR Records', 'Salary Data']
+  }
+};
+
+// ── SYNTHETIC ENTERPRISE DATASET ─────────────────────────────────
+const SYNTHETIC_DATA = {
+  revenue: {
+    q3_total: '$142.8M',
+    regions: { APAC: '$38.2M', EMEA: '$51.4M', AMER: '$53.2M' },
+    growth: '+12.4% YoY',
+    top_product: 'CloudSuite Pro ($61.2M)'
+  },
+  employees: [
+    { name: 'Alice Chen', dept: 'Engineering', salary: 185000, band: 'IC5', location: 'San Francisco' },
+    { name: 'Bob Raj', dept: 'Sales', salary: 120000, band: 'IC3', location: 'New York' },
+    { name: 'Carol M.', dept: 'Finance', salary: 155000, band: 'IC4', location: 'London' },
+    { name: 'David K.', dept: 'Marketing', salary: 110000, band: 'IC3', location: 'Austin' },
+    { name: 'Eva Singh', dept: 'Engineering', salary: 210000, band: 'IC6', location: 'Seattle' }
+  ],
+  security_alerts: [
+    { id: 'ALT-9921', severity: 'HIGH', msg: 'Unusual login from IP 203.0.113.45', ts: '2024-11-12T03:14:00Z', status: 'Open' },
+    { id: 'ALT-9904', severity: 'MEDIUM', msg: 'Failed MFA attempts x7 for user b.jones', ts: '2024-11-11T18:32:00Z', status: 'Investigating' },
+    { id: 'ALT-9887', severity: 'LOW', msg: 'Config drift detected on prod-srv-04', ts: '2024-11-11T09:01:00Z', status: 'Resolved' }
+  ],
+  compliance: [
+    { standard: 'SOC 2 Type II', status: 'Compliant', last_audit: '2024-09-15', next: '2025-03-15' },
+    { standard: 'ISO 27001', status: 'Compliant', last_audit: '2024-07-20', next: '2025-01-20' },
+    { standard: 'GDPR Article 30', status: 'In Progress', last_audit: '2024-10-01', next: '2025-01-01' }
+  ],
+  incidents: [
+    { id: 'INC-4412', priority: 'P1', title: 'DB replication lag on prod-db-02', status: 'In Progress', assignee: 'DevOps' },
+    { id: 'INC-4401', priority: 'P2', title: 'SSL cert expiry — api.internal.corp', status: 'Scheduled', assignee: 'Priya M.' },
+    { id: 'INC-4388', priority: 'P2', title: 'Memory leak in auth-service v2.3.1', status: 'Investigating', assignee: 'Eng Team' },
+    { id: 'INC-4371', priority: 'P3', title: 'Slow queries on reporting shard', status: 'Open', assignee: 'DBA' },
+    { id: 'INC-4355', priority: 'P3', title: 'Stale cache TTL in CDN config', status: 'Open', assignee: 'Unassigned' }
+  ]
+};
+
+// ── STATE ─────────────────────────────────────────────────────────
+let currentRole = 'analyst';
+let queryCount = 0;
+let isLoading = false;
+
+// ── SYSTEM PROMPT BUILDER ─────────────────────────────────────────
+function buildSystemPrompt(role) {
+  const r = ROLES[role];
+  return `You are a secure enterprise RAG assistant for ${r.name} (${r.title}, Access Level ${r.level}).
+
+RBAC POLICY:
+- Accessible data sources: ${r.sources.join(', ')}
+- DENIED sources (must refuse access): ${r.denied.length > 0 ? r.denied.join(', ') : 'None — full access'}
+- If the query involves a denied source, set access_denied: true and explain the policy block.
+
+SYNTHETIC ENTERPRISE DATA (use this as your knowledge base):
+Revenue Q3 2024: Total ${SYNTHETIC_DATA.revenue.q3_total} | APAC ${SYNTHETIC_DATA.revenue.regions.APAC} | EMEA ${SYNTHETIC_DATA.revenue.regions.EMEA} | AMER ${SYNTHETIC_DATA.revenue.regions.AMER} | Growth ${SYNTHETIC_DATA.revenue.growth} | Top product: ${SYNTHETIC_DATA.revenue.top_product}
+Employees: ${JSON.stringify(SYNTHETIC_DATA.employees)}
+Security Alerts: ${JSON.stringify(SYNTHETIC_DATA.security_alerts)}
+Compliance Records: ${JSON.stringify(SYNTHETIC_DATA.compliance)}
+IT Incidents: ${JSON.stringify(SYNTHETIC_DATA.incidents)}
+
+INSTRUCTIONS:
+- Answer only from the data above. Do not make up numbers.
+- Be specific — include exact figures, IDs, names from the data.
+- If a query touches a DENIED source, refuse it professionally.
+- Always respond in valid JSON only (no markdown, no backticks).
+
+RESPONSE FORMAT (strict JSON):
+{
+  "answer": "grounded answer with specific data points",
+  "sources_used": ["source names actually used"],
+  "access_denied": false,
+  "denied_reason": "",
+  "retrieval": [{"source": "name", "score": 0.0-1.0}],
+  "confidence": 0.0-1.0,
+  "citations": ["short citation label"]
+}`;
+}
+
+// ── SEND QUERY ────────────────────────────────────────────────────
+async function sendQuery() {
+  if (isLoading) return;
+  const input = document.getElementById('query-input');
+  const q = input.value.trim();
+  if (!q) return;
+
+  const emptyState = document.getElementById('empty-state');
+  if (emptyState) emptyState.remove();
+
+  input.value = '';
+  input.style.height = 'auto';
+  isLoading = true;
+  document.getElementById('send-btn').disabled = true;
+  queryCount++;
+  document.getElementById('query-count').textContent = queryCount;
+
+  appendUserMsg(q);
+  const loadingId = appendLoading();
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: buildSystemPrompt(currentRole),
+        messages: [{ role: 'user', content: q }]
+      })
+    });
+
+    const data = await response.json();
+    const raw = data.content?.map(c => c.text || '').join('') || '';
+    removeLoading(loadingId);
+
+    let parsed;
+    try {
+      const clean = raw.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(clean);
+    } catch (e) {
+      parsed = {
+        answer: raw || 'Could not parse response.',
+        sources_used: [], access_denied: false,
+        retrieval: [], confidence: 0.7, citations: []
+      };
+    }
+    appendAssistantMsg(parsed);
+
+  } catch (err) {
+    removeLoading(loadingId);
+    appendAssistantMsg({
+      answer: 'Network error — please check your connection and try again.',
+      sources_used: [], access_denied: false,
+      retrieval: [], confidence: 0, citations: []
+    });
+  }
+
+  isLoading = false;
+  document.getElementById('send-btn').disabled = false;
+}
+
+// ── UI HELPERS ────────────────────────────────────────────────────
+function appendUserMsg(text) {
+  const chat = document.getElementById('chat-area');
+  const el = document.createElement('div');
+  el.className = 'msg user';
+  el.innerHTML = `<div class="msg-bubble">${esc(text)}</div>`;
+  chat.appendChild(el);
+  scrollBottom();
+}
+
+let loadingCounter = 0;
+function appendLoading() {
+  const id = 'load-' + (++loadingCounter);
+  const chat = document.getElementById('chat-area');
+  const el = document.createElement('div');
+  el.id = id;
+  el.className = 'msg assistant';
+  el.innerHTML = `<div class="loading-msg"><div class="dots"><span></span><span></span><span></span></div>Routing query across data silos...</div>`;
+  chat.appendChild(el);
+  scrollBottom();
+  return id;
+}
+
+function removeLoading(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function appendAssistantMsg(parsed) {
+  const chat = document.getElementById('chat-area');
+  const el = document.createElement('div');
+  el.className = 'msg assistant';
+
+  let html = `<div class="msg-bubble">${esc(parsed.answer)}</div>`;
+
+  // RBAC denial banner
+  if (parsed.access_denied) {
+    html += `<div class="denied-banner">&#128274; <div><strong>Access Denied</strong> — ${esc(parsed.denied_reason || 'You do not have permission to access this data source.')}</div></div>`;
+  }
+
+  // Retrieval trace
+  if (parsed.retrieval && parsed.retrieval.length > 0) {
+    const colors = ['#185FA5', '#27ae60', '#f39c12', '#8e44ad', '#16a085', '#e74c3c'];
+    const role = ROLES[currentRole];
+    html += `<div class="trace-panel">
+      <div class="trace-header" onclick="toggleTrace(this)">
+        &#128279; Retrieval trace — ${parsed.retrieval.length} sources queried &nbsp; &#9660;
+      </div>
+      <div class="trace-body">`;
+    parsed.retrieval.forEach((r, i) => {
+      const score = Math.min(1, Math.max(0, r.score || 0));
+      const pct = Math.round(score * 100);
+      const isDenied = role.denied.some(d => (r.source || '').toLowerCase().includes(d.toLowerCase().split(' ')[0]));
+      if (isDenied) {
+        html += `<div class="trace-row"><span class="trace-src">${esc(r.source)}</span><span class="trace-locked">&#128274; Blocked by RBAC</span></div>`;
+      } else {
+        html += `<div class="trace-row">
+          <span class="trace-src">${esc(r.source)}</span>
+          <div class="trace-bar-wrap"><div class="trace-bar" style="width:${pct}%;background:${colors[i % colors.length]}"></div></div>
+          <span class="trace-score">${pct}%</span>
+        </div>`;
+      }
+    });
+    html += `</div></div>`;
+  }
+
+  // Citations
+  if (parsed.citations && parsed.citations.length > 0) {
+    const citColors = [
+      { bg: '#EBF4FF', color: '#0C447C', border: '#b3d4f7' },
+      { bg: '#f0fdf4', color: '#166534', border: '#bbf7d0' },
+      { bg: '#fffbeb', color: '#92400e', border: '#fde68a' },
+      { bg: '#fdf4ff', color: '#7e22ce', border: '#e9d5ff' }
+    ];
+    html += '<div class="citations">';
+    parsed.citations.forEach((c, i) => {
+      const s = citColors[i % citColors.length];
+      html += `<span class="cite-tag" style="background:${s.bg};color:${s.color};border-color:${s.border}">&#128196; ${esc(c)}</span>`;
+    });
+    html += '</div>';
+  }
+
+  // Confidence indicator
+  if (!parsed.access_denied && parsed.confidence !== undefined) {
+    const conf = Math.min(1, Math.max(0, parsed.confidence));
+    const pct = Math.round(conf * 100);
+    const barColor = conf > 0.8 ? '#27ae60' : conf > 0.5 ? '#f39c12' : '#e74c3c';
+    html += `<div class="confidence">Confidence <div class="conf-bar-wrap"><div class="conf-bar" style="width:${pct}%;background:${barColor}"></div></div> ${pct}%</div>`;
+  }
+
+  el.innerHTML = html;
+  chat.appendChild(el);
+  scrollBottom();
+}
+
+function toggleTrace(header) {
+  const body = header.nextElementSibling;
+  if (body) body.style.display = body.style.display === 'none' ? 'flex' : 'none';
+}
+
+function setRole(role) {
+  currentRole = role;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('role-' + role).classList.add('active');
+  const r = ROLES[role];
+  const av = document.getElementById('user-avatar');
+  av.textContent = r.initials;
+  av.style.background = r.avatarBg;
+  av.style.color = r.avatarColor;
+  document.getElementById('user-name').textContent = `${r.name} \u00b7 ${r.title}`;
+
+  const chat = document.getElementById('chat-area');
+  if (!document.getElementById('empty-state')) {
+    const notice = document.createElement('div');
+    notice.className = 'role-switch-notice';
+    notice.textContent = `— Switched to ${r.title} (Level ${r.level}) —`;
+    chat.appendChild(notice);
+    scrollBottom();
+  }
+}
+
+function useSuggestion(btn) {
+  const input = document.getElementById('query-input');
+  input.value = btn.textContent;
+  autoResize(input);
+  sendQuery();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuery(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function scrollBottom() {
+  const c = document.getElementById('chat-area');
+  c.scrollTop = c.scrollHeight;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>

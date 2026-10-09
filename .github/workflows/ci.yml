@@ -1,0 +1,38 @@
+# Continuous Integration: on every push and pull request, GitHub runs the
+# tests and checks that the Docker image still builds. A red X on a commit
+# means something broke before it ever reaches the live app.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -v
+
+  docker:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t rag-platform .
+      - name: Start container and check it is healthy
+        run: |
+          docker run -d --name rag -p 8501:8501 -e GROQ_API_KEY=dummy rag-platform
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8501/_stcore/health && exit 0
+            sleep 2
+          done
+          docker logs rag
+          exit 1

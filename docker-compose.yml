@@ -1,0 +1,9 @@
+# Run with:  docker compose up --build
+# Reads GROQ_API_KEY from a .env file next to this one (copy .env.example to .env).
+services:
+  rag:
+    build: .
+    ports:
+      - "8501:8501"
+    env_file: .env
+    restart: unless-stopped

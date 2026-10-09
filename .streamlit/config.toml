@@ -1,0 +1,5 @@
+[server]
+maxUploadSize = 10   # MB, matches MAX_FILE_MB in rag/config.py
+
+[theme]
+primaryColor = "#2F6FED"

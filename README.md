@@ -1,11 +1,9 @@
 # 📄 Enterprise RAG Platform
 
-![CI](https://github.com/itsnidhimehta/Enterprise-RAG-Platform/actions/workflows/ci.yml/badge.svg)
-
 Ask questions about your own PDFs and get answers that **cite the exact page** they came from.
 Built as a Retrieval-Augmented Generation (RAG) pipeline in Python, containerised with Docker, tested in CI, and deployed live.
 
-🔗 **Live demo:** _add your Streamlit link here_
+🔗 **Live demo:** https://enterpriserag-platform.streamlit.app/
 (Comes with a sample — fictional — bank home-loan policy, so you can try it without uploading anything.)
 
 ---

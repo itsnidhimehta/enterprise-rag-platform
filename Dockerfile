@@ -22,6 +22,7 @@ RUN pip install -r requirements.txt
 
 COPY --chown=appuser:appuser . .
 USER appuser
+RUN mkdir -p /app/data && chown appuser:appuser /app/data
 
 # Download the embedding model at build time, so the container starts fast
 # and works without internet access to Hugging Face at runtime.

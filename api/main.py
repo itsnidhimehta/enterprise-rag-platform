@@ -11,6 +11,7 @@ from rag import config
 from rag.chain import NOT_FOUND, answer, make_llm
 from rag.ingest import load_pdf, split_documents
 from rag.vectorstore import FastEmbedder, build_index, retrieve
+from api.db import get_stats, init_db, log_query
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("api")
@@ -22,6 +23,7 @@ state = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Runs ONCE when the server starts
+    init_db()
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         raise RuntimeError("GROQ_API_KEY is not set")
@@ -66,14 +68,24 @@ def ask(req: AskRequest):
     try:
         hits = retrieve(state["index"], req.question, k=req.top_k)
         reply = answer(state["llm"], req.question, hits)
-    except Exception:
+    except Exception as exc:
+        latency = round(time.perf_counter() - start, 2)
         log.exception("Question failed")
+        log_query(req.question, str(exc), None, latency, "error")
         raise HTTPException(status_code=503, detail="LLM call failed, please try again")
 
     latency = round(time.perf_counter() - start, 2)
+    best_score = round(hits[0][1], 2) if hits else 0.0
+    status = "not_found" if reply == NOT_FOUND else "success"
     sources = [] if reply == NOT_FOUND else [
         Source(source=d.metadata["source"], page=d.metadata["page"], score=round(s, 2))
         for d, s in hits
     ]
-    log.info("q=%r best_score=%.2f latency=%.2fs", req.question, hits[0][1] if hits else 0, latency)
+    log.info("q=%r best_score=%.2f latency=%.2fs status=%s", req.question, best_score, latency, status)
+    log_query(req.question, reply, best_score, latency, status)
     return AskResponse(answer=reply, sources=sources, latency_sec=latency)
+
+
+@app.get("/stats")
+def stats():
+    return get_stats()

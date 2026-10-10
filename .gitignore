@@ -8,3 +8,4 @@ venv/
 .cache/
 .idea/
 .vscode/
+query_logs.db
